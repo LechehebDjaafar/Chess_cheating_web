@@ -510,6 +510,104 @@ select:focus {
     border-width: 0 3px 3px 0;
     transform: rotate(45deg);
 }
+/* أضف هذه التنسيقات إلى ملف styles.css */
+.fen-input-section {
+    margin: 25px 0;
+    padding: 15px;
+    background-color: #f0f7ff;
+    border-radius: 8px;
+    border: 1px solid #b3d4fc;
+}
 
+.fen-input-container {
+    display: flex;
+    gap: 10px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.fen-input-container input {
+    flex: 1;
+    min-width: 220px;
+    padding: 12px 15px;
+    border-radius: 6px;
+    border: 1px solid #ddd;
+    font-family: monospace;
+    font-size: 14px;
+}
+
+.fen-input-container input:focus {
+    border-color: #3498db;
+    outline: none;
+    box-shadow: 0 0 5px rgba(52, 152, 219, 0.5);
+}
+
+.fen-button {
+    padding: 12px 20px;
+    background-color: #3498db;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: all 0.3s ease;
+}
+
+.fen-button:hover {
+    background-color: #2980b9;
+}
+
+.fen-button.secondary {
+    background-color: #95a5a6;
+}
+
+.fen-button.secondary:hover {
+    background-color: #7f8c8d;
+}
+
+.fen-helper {
+    font-size: 14px;
+    color: #7f8c8d;
+    margin-top: 5px;
+}
+
+.fen-controls {
+    margin: 20px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #e0e0e0;
+}
+
+.fen-display {
+    padding: 10px;
+    background-color: #edf2f7;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 14px;
+    margin-bottom: 10px;
+    word-break: break-all;
+    text-align: left;
+    direction: ltr;
+}
+
+.copy-success {
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 12px 25px;
+    background-color: #2ecc71;
+    color: white;
+    border-radius: 8px;
+    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.2);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    z-index: 1000;
+}
+
+.copy-success.show {
+    opacity: 1;
+}
 /* استيراد خط Tajawal */
 @import url('https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700&display=swap');

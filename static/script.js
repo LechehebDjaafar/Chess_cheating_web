@@ -514,6 +514,265 @@ function flipBoard() {
     }
 }
 
+// دالة للتحقق من صحة FEN
+function isValidFen(fen) {
+    try {
+        // استخدام مكتبة Chess.js للتحقق من صحة FEN
+        const tempGame = new Chess();
+        return tempGame.load(fen);
+    } catch (e) {
+        return false;
+    }
+}
+
+// دالة لتطبيق وضعية FEN
+function applyFen(fen) {
+    if (!fen || fen.trim() === '') {
+        // إذا كان FEN فارغًا، ابدأ لعبة جديدة
+        game = new Chess();
+        board.position('start');
+    } else if (isValidFen(fen)) {
+        // إذا كان FEN صحيحًا، طبقه
+        game = new Chess(fen);
+        board.position(fen);
+    } else {
+        // إذا كان FEN غير صحيح، أظهر رسالة خطأ
+        $('#errorMessage').text('وضعية FEN غير صالحة، يرجى التحقق من الإدخال');
+        return false;
+    }
+    
+    // إعادة ضبط التاريخ والحالة
+    moveHistory = [];
+    updateStatus();
+    updatePGN();
+    updateCurrentFen();
+    applyActivePlayerHighlight();
+    
+    // إزالة أي أسهم أو تظليل
+    removeArrow();
+    removeHighlights();
+    
+    // إذا كان اللاعب يلعب بالأسود والمحرك مفعل، احصل على نقلة الكمبيوتر
+    if (playerColor === 'black' && game.turn() === 'w') {
+        setTimeout(makeComputerMove, 500);
+    } else if (playerColor === 'white' && game.turn() === 'b') {
+        setTimeout(makeComputerMove, 500);
+    }
+    
+    // إذا كان المحرك مفعل، احصل على أفضل نقلة
+    if (engineEnabled) {
+        getBestMove();
+    }
+    
+    // إخفاء رسائل الخطأ إذا نجحت العملية
+    $('#errorMessage').text('');
+    return true;
+}
+
+// دالة لتحديث عرض FEN الحالي
+function updateCurrentFen() {
+    const currentFen = game.fen();
+    $('#currentFen').text(currentFen);
+    // تحديث حقل الإدخال أيضًا إذا كان موجودًا
+    $('#gameScreenFenInput').val(currentFen);
+}
+
+// دالة لنسخ FEN الحالي إلى الحافظة
+function copyCurrentFen() {
+    const currentFen = game.fen();
+    
+    // نسخ النص إلى الحافظة
+    navigator.clipboard.writeText(currentFen).then(function() {
+        // إظهار رسالة نجاح
+        const successMessage = $('<div>').addClass('copy-success').text('تم نسخ FEN بنجاح!');
+        $('body').append(successMessage);
+        
+        // إظهار الرسالة ثم إخفاؤها بعد فترة
+        setTimeout(function() {
+            successMessage.addClass('show');
+            
+            setTimeout(function() {
+                successMessage.removeClass('show');
+                
+                setTimeout(function() {
+                    successMessage.remove();
+                }, 300);
+            }, 2000);
+        }, 10);
+    }).catch(function() {
+        alert('حدث خطأ أثناء نسخ FEN');
+    });
+}
+
+// تعديل دالة تهيئة اللوحة لتحديث FEN الحالي
+function initializeBoard() {
+    const config = {
+        draggable: true,
+        position: 'start',
+        pieceTheme: 'static/img/wikipedia/{piece}.png',
+        onDragStart: onDragStart,
+        onDrop: onDrop,
+        onSnapEnd: onSnapEnd,
+        onMouseoverSquare: onMouseoverSquare,
+        onMouseoutSquare: onMouseoutSquare,
+        showNotation: true,
+        onSnapbackEnd: function() {
+            // تحديث FEN بعد إعادة القطعة إلى موقعها الأصلي
+            updateCurrentFen();
+        },
+        onChange: function() {
+            // تحديث FEN عند تغيير الوضعية
+            updateCurrentFen();
+        }
+    };
+    
+    // تدمير اللوحة الحالية إذا كانت موجودة
+    if (board) {
+        board.destroy();
+    }
+    
+    board = Chessboard('board', config);
+    
+    // إنشاء طبقة السهم
+    createArrowLayer();
+    
+    // حساب حجم المربع
+    calculateSquareSize();
+    
+    updateStatus();
+    updatePGN();
+    updateCurrentFen(); // تحديث FEN الحالي
+    updatePlayerInfo();
+    
+    // تطبيق التأثيرات المرئية
+    applyActivePlayerHighlight();
+    
+    // التوافقية مع الهواتف
+    $(window).resize(function() {
+        board.resize();
+        calculateSquareSize();
+        removeArrow(); // إزالة السهم عند تغيير الحجم
+    });
+}
+
+// تعديل دالة onDrop لتحديث FEN بعد النقلة
+function onDrop(source, target) {
+    // حذف التظليل
+    removeHighlights();
+    
+    // معرفة ما إذا كانت النقلة قانونية
+    const move = game.move({
+        from: source,
+        to: target,
+        promotion: 'q' // دائماً ترقية إلى الملكة
+    });
+    
+    // إذا كانت النقلة غير قانونية
+    if (move === null) return 'snapback';
+    
+    // تسجيل النقلة في التاريخ
+    moveHistory.push({
+        fen: game.fen(),
+        move: `${source}-${target}`
+    });
+    
+    updateStatus();
+    updatePGN();
+    updateCurrentFen(); // تحديث FEN بعد النقلة
+    applyActivePlayerHighlight();
+    
+    // إذا كان اللاعب يلعب بلون محدد والمحرك مفعل، تأتي نقلة الخصم تلقائياً
+    if (playerColor !== 'both' && engineEnabled) {
+        makeComputerMove();
+    } else if (playerColor !== 'both' && !engineEnabled) {
+        // إذا كان اللاعب يلعب ضد الكمبيوتر (وليس مع المحرك مفعل)
+        setTimeout(makeComputerMove, 500);
+    }
+    
+    // إذا كان المحرك مفعل، احصل على أفضل نقلة
+    if (engineEnabled) {
+        getBestMove();
+    }
+}
+
+// إضافة معالجات الأحداث للأزرار الجديدة
+$(document).ready(function() {
+    // الأكواد الموجودة بالفعل...
+    
+    // أضف هذه الأكواد في نهاية دالة $(document).ready
+    
+    // معالج حدث زر تطبيق FEN في شاشة الخيارات
+    $('#applyFenBtn').click(function() {
+        const fen = $('#fenInput').val().trim();
+        if (!fen) {
+            // إذا كان الحقل فارغًا، لا تفعل شيئًا بعد (سيتم استخدام الوضعية الافتراضية)
+            return;
+        }
+        
+        if (!isValidFen(fen)) {
+            $('#errorMessage').text('وضعية FEN غير صالحة، يرجى التحقق من الإدخال');
+        }
+    });
+    
+    // معالج حدث زر إعادة ضبط FEN في شاشة الخيارات
+    $('#resetFenBtn').click(function() {
+        $('#fenInput').val('');
+    });
+    
+    // معالج حدث زر تطبيق FEN في شاشة اللعبة
+    $('#gameScreenApplyFenBtn').click(function() {
+        const fen = $('#gameScreenFenInput').val().trim();
+        applyFen(fen);
+    });
+    
+    // معالج حدث زر نسخ FEN الحالي
+    $('#copyFenBtn').click(function() {
+        copyCurrentFen();
+    });
+    
+    // تعديل زر بدء اللعبة ليتضمن التحقق من FEN
+    $('#startGameBtn').click(function() {
+        // تعيين خيارات اللاعب
+        playerColor = $('input[name="playerColor"]:checked').val();
+        showLegalMoves = $('#showLegalMoves').is(':checked');
+        
+        // تهيئة اللوحة
+        initializeBoard();
+        
+        // التحقق من وجود FEN مخصص
+        const fen = $('#fenInput').val().trim();
+        if (fen && isValidFen(fen)) {
+            // تطبيق FEN المخصص
+            applyFen(fen);
+        }
+        
+        // إخفاء خيارات اللعبة وعرض واجهة اللعبة
+        $('#gameOptions').hide();
+        $('#boardWrapper').fadeIn();
+        
+        // إذا كان اللاعب يلعب بالأسود والدور على الأبيض، يبدأ الكمبيوتر باللعب أولا
+        if (playerColor === 'black' && game.turn() === 'w') {
+            setTimeout(makeComputerMove, 500);
+        } else if (playerColor === 'white' && game.turn() === 'b') {
+            // إذا كان اللاعب يلعب بالأبيض والدور على الأسود
+            setTimeout(makeComputerMove, 500);
+        }
+    });
+    
+    // تعديل دالة التراجع عن النقلة لتحديث FEN
+    const originalUndoLastMove = undoLastMove;
+    undoLastMove = function() {
+        originalUndoLastMove();
+        updateCurrentFen(); // تحديث FEN بعد التراجع
+    };
+    
+    // تعديل دالة قلب اللوحة لتحديث FEN
+    const originalFlipBoard = flipBoard;
+    flipBoard = function() {
+        originalFlipBoard();
+        updateCurrentFen(); // تحديث FEN بعد قلب اللوحة
+    };
+});
 // عند تحميل الصفحة
 $(document).ready(function() {
     // إخفاء واجهة اللعبة وعرض شاشة البداية

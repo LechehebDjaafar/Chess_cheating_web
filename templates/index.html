@@ -87,6 +87,23 @@
             <div class="notation">
                 <div id="pgn"></div>
             </div>
+            <div class="fen-controls">
+                <div class="fen-display" id="currentFen" dir="ltr">الوضعية الحالية FEN</div>
+                <div class="fen-input-container">
+                    <input type="text" id="gameScreenFenInput" placeholder="أدخل وضعية FEN هنا" dir="ltr">
+                    <button id="gameScreenApplyFenBtn" class="fen-button">تطبيق</button>
+                    <button id="copyFenBtn" class="fen-button secondary">نسخ FEN الحالي</button>
+                </div>
+            </div>
+        </div>
+        <div class="fen-input-section">
+            <h3>إدخال وضعية FEN (اختياري)</h3>
+            <div class="fen-input-container">
+                <input type="text" id="fenInput" placeholder="أدخل وضعية FEN هنا" dir="ltr">
+                <button id="applyFenBtn" class="fen-button">تطبيق الوضعية</button>
+                <button id="resetFenBtn" class="fen-button secondary">إعادة ضبط</button>
+            </div>
+            <div class="fen-helper">للبدء بوضعية افتراضية اترك الحقل فارغاً</div>
         </div>
     </div>
     <!-- تصحيح مسار ملف JavaScript -->
